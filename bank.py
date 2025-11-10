@@ -4,6 +4,7 @@
 
 import json
 import os
+import random
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -261,7 +262,8 @@ class BankingSystem:
             print("2. Withdraw")
             print("3. E-Transfer")
             print("4. View Transaction History")
-            print("5. Logout")
+            print("5. Investing")
+            print("6. Logout")
             print("="*60)
             
             choice = input("Enter your choice (1-5): ").strip()
@@ -275,6 +277,8 @@ class BankingSystem:
             elif choice == '4':
                 self.current_user.show_transaction_history()
             elif choice == '5':
+                self.investmentmenu()
+            elif choice == '6':
                 self._logout()
                 break
             else:
@@ -404,6 +408,411 @@ class BankingSystem:
         except ValueError:
             print("❌ Invalid account number.")
 
+    def investmentmenu(self):
+        """Display and handle user investment menu options."""
+
+        while True:
+            print("\n" + "="*60)
+            print("📈 INVESTMENT MENU")
+            print(f"💰 Current Balance: ${self.current_user.balance:.2f}")
+            print("="*60)
+            print("1. Slots")
+            print("2. Blackjack")
+            print("3. Roulette")
+            print("4. Baccarat")
+            print("5. Back")
+            print("="*60)
+
+            choice = input("Enter your choice (1-5): ").strip()
+            
+            if choice == '1':
+                self._slots()
+            elif choice == '2':
+                self._blackjack()
+            elif choice == '3':
+                self._roulette()
+            elif choice == '4':
+                self._baccarat()
+            elif choice == '5':
+                break
+            else:
+                print("❌ Invalid choice. Please try again.")
+            
+    def _slots(self):
+        """Slots game"""
+
+        """Betting menu"""
+        print("\n" + "="*60)
+        print("🎰 SLOTS")
+        print(f"💰 Current Balance: ${self.current_user.balance:.2f}")
+        print("="*60)
+
+        """Enter bet and withdraw that money"""
+        while True:
+            try:
+                amount = float(input("\nEnter bet amount: $"))
+                if self.current_user.withdraw(amount):
+                    self._save_current_user()
+                    break
+                else:
+                    print("Insufficient funds.")
+                    return
+            except ValueError:
+                print("❌ Invalid amount. Please enter a number.")
+
+        """Generate and print the slot roll"""
+        symbols = []
+        numtosym = ["🍒", "🍋", "🔔", "💎", "7️⃣", "🍉", "⭐", "🍀", "🍇", "💰", "🔥", "🍊"]
+        slotprint = ""
+        for rows in range(3):
+            symbols.append([])
+            for columns in range(5):
+                value = random.randint(0,11)
+                symbols[rows].append(value)
+                slotprint += numtosym[value] + " "
+            slotprint += "\n"
+
+        print("="*60)
+        print(slotprint)
+
+        """Check for win"""
+        win = 0
+        for x in range(3):
+            current = 1
+            for y in range(5):
+                if x==0:
+                    if symbols[0][y] == symbols[1][y] and symbols[0][y] == symbols[2][y]:
+                        win += 3
+                    if y <= 2:
+                        if symbols[0][y] == symbols[1][y+1] and symbols [0][y] == symbols[2][y+2]:
+                            win +=3
+                    if y >= 2:
+                        if symbols[0][y] == symbols[1][y-1] and symbols [0][y] == symbols[2][y-2]:
+                            win +=3
+                if y > 0:
+                    if symbols[x][y] == symbols[x][y-1]:
+                        current += 1
+                    else:
+                        if current > 2:
+                            win += current
+                        current = 1
+            if current > 2:
+                win += current
+        if win > 0:
+            print("Winner!")
+            self.current_user.deposit(amount*(win+1))
+        else:
+            print("Better luck next time.")
+
+    def _blackjack(self):
+        """Blackjack game"""
+
+        """Betting menu"""
+        print("\n" + "="*60)
+        print("🃏 BLACKJACK")
+        print(f"💰 Current Balance: ${self.current_user.balance:.2f}")
+        print("="*60)
+
+        """Enter bet and withdraw that money"""
+        while True:
+            try:
+                amount = float(input("\nEnter bet amount: $"))
+                if self.current_user.withdraw(amount):
+                    self._save_current_user()
+                    break
+                else:
+                    print("Insufficient funds.")
+                    return
+            except ValueError:
+                print("❌ Invalid amount. Please enter a number.")
+
+        print("="*60)
+
+        """Create the deck"""
+        suits = ['♣️','♠️','♥️','♦️']
+        cards = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
+        deck = [(card, suit) for suit in suits for card in cards]
+
+        """Shuffle the deck and deal the cards"""
+        random.shuffle(deck)
+        player_hand = [deck.pop(), deck.pop()]
+        dealer_hand = [deck.pop(), deck.pop()]
+
+        """Player choice/move"""
+        while True:
+            print("Your hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
+            print(f"Dealer's hand: ? {dealer_hand[1][0]}{dealer_hand[1][1]}")
+            if (cardeval(player_hand)==21):
+                print("Blackjack! 🤑")
+                self.current_user.deposit(amount+amount*1.5)
+                input("\nPress Enter to continue.")
+                return
+            print("1. Hit")
+            print("2. Double")
+            print("3. Stand")
+
+            choice = input("Enter your choice (1-3): ").strip()
+            print("="*60)
+            
+            if choice == '1':
+                player_hand.append(deck.pop())
+                if (cardeval(player_hand) > 21):
+                    break
+            elif choice == '2':
+                amount = amount*2
+                player_hand.append(deck.pop())
+                break
+            elif choice == '3':
+                break
+            else:
+                print("❌ Invalid choice. Please try again.")
+
+        """Scoring"""
+        print("Dealer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in dealer_hand))
+        while (cardeval(dealer_hand)<17):
+            dealer_hand.append(deck.pop())
+            print("Dealer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in dealer_hand))
+        print("Your hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
+
+        if (cardeval(player_hand) > 21):
+            print("You bust. 😢")
+        elif (cardeval(dealer_hand) > 21):
+            print("The dealer busts! 🤑")
+            self.current_user.deposit(amount*2)
+        elif (cardeval(dealer_hand)>cardeval(player_hand)):
+            print("The dealer won. 😢")
+        elif (cardeval(dealer_hand)==cardeval(player_hand)):
+            print("It's a tie! ⚖️")
+            self.current_user.deposit(amount)
+        else:
+            print("You won! 🤑")
+            self.current_user.deposit(amount*2)
+
+        input("\nPress Enter to continue.")
+    
+    def _roulette(self):
+        """Roulette game"""
+
+        """Betting menu"""
+        print("\n" + "="*60)
+        print("🤑 ROULETTE")
+        print(f"💰 Current Balance: ${self.current_user.balance:.2f}")
+        print("="*60)
+
+        """Enter bet and withdraw that money"""
+        while True:
+            try:
+                amount = float(input("\nEnter bet amount: $"))
+                if self.current_user.withdraw(amount):
+                    self._save_current_user()
+                    break
+                else:
+                    print("Insufficient funds.")
+                    return
+            except ValueError:
+                print("❌ Invalid amount. Please enter a number.")
+
+        print("""                       | 0🟩 |
+        |  1-18  |  🟥1 |  ⬛2 |  🟥3 |
+        | 1st 12 |  ⬛4 |  🟥5 |  ⬛6 |
+        |  even  |  🟥7 |  ⬛8 |  🟥9 |
+                 | ⬛10 | ⬛11 | 🟥12 |
+        | 2nd 12 | ⬛13 | 🟥14 | ⬛15 |
+        |   red  | 🟥16 | ⬛17 | 🟥18 |
+        |  black | 🟥19 | ⬛20 | 🟥21 |
+                 | ⬛22 | 🟥23 | ⬛24 |
+        |   odd  | 🟥25 | ⬛26 | 🟥27 |
+        | 3rd 12 | ⬛28 | ⬛29 | 🟥30 |
+        |  19-36 | ⬛31 | 🟥32 | ⬛33 |
+                 | 🟥34 | ⬛35 | 🟥36 |
+                 | col 1| col 2| col 3|""")
+        
+        """Roll the ball"""
+        ball = random.randint(0,36)
+        extras = []
+        if ball % 2 == 0:
+            extras.append("even")
+        else:
+            extras.append("odd")
+        if ball <= 18:
+            extras.append("1-18")
+        else:
+            extras.append("19-36")
+        if ball <= 12:
+            extras.append("1st 12")
+        elif ball <= 24:
+            extras.append("2nd 12")
+        else:
+            extras.append("3rd 12")
+        if ball % 3 == 0:
+            extras.append("col 3")
+        elif ball % 3 == 1:
+            extras.append("col 1")
+        else: 
+            extras.append("col 2")
+        if ball in [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]:
+            extras.append("red")
+        elif ball == 0:
+            "green"
+        else: 
+            extras.append("black")
+
+        """Betting and winning"""
+        while True:
+            choice = input("Enter your choice: ").strip()
+            print("="*60)
+
+            if choice not in ['1-18','1st 12','even','2nd 12','red','black','odd','3rd 12','19-36','col 1','col 2','col 3']:
+                try:
+                    if int(choice)>36 or int(choice)<0:
+                        print("❌ Invalid choice. Please try again.")
+                    else:
+                        print("The ball landed in ",ball)
+                        if (ball == int(choice)):
+                            print("You win!")
+                            self.current_user.deposit(amount*36)
+                        else:
+                            print("You lose!")
+                        break
+                except ValueError:
+                    print("❌ Invalid choice. Please try again.")
+            else:
+                print("The ball landed in ",ball)
+                if choice in extras:
+                    print("You win!")
+                    if choice in ['1st 12','2nd 12','3rd 12','col 1','col 2','col 3']:
+                        self.current_user.deposit(amount*3)
+                    else:
+                        self.current_user.deposit(amount*2)
+                else:
+                    print("You lose!")
+                break
+        
+
+    def _baccarat(self):
+        """Baccarat game"""
+
+        """Betting menu"""
+        print("\n" + "="*60)
+        print("🃏 BACCARAT")
+        print(f"💰 Current Balance: ${self.current_user.balance:.2f}")
+        print("="*60)
+
+        """Enter bet and withdraw that money"""
+        while True:
+            try:
+                amount = float(input("\nEnter bet amount: $"))
+                if self.current_user.withdraw(amount):
+                    self._save_current_user()
+                    break
+                else:
+                    print("Insufficient funds.")
+                    return
+            except ValueError:
+                print("❌ Invalid amount. Please enter a number.")
+
+        while True:
+            print("\n1.Player")
+            print("2.Banker")
+            choice = input("Enter your choice (1-2): ").strip()
+            print("="*60)
+
+            if choice not in ['1','2']:
+                print("❌ Invalid choice. Please try again.")
+            else:
+                break
+
+        """Create the deck"""
+        suits = ['♣️','♠️','♥️','♦️']
+        cards = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
+        deck = [(card, suit) for suit in suits for card in cards]
+
+        """Shuffle the deck and deal the cards"""
+        random.shuffle(deck)
+        player_hand = [deck.pop(), deck.pop()]
+        banker_hand = [deck.pop(), deck.pop()]
+
+        print("\nPlayer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
+        print("Banker's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in banker_hand))
+        print("Drawing third cards...")
+
+        """Third card drawing"""
+        #if (baccarateval(player_hand) >= 8 or baccarateval(banker_hand) >= 8):
+        #    break
+        if (baccarateval(player_hand)<=5):
+            thirdcard = deck.pop()
+            cardscore = baccarateval([thirdcard])
+            player_hand.append(thirdcard)
+            if (baccarateval(banker_hand)<=2):
+                banker_hand.append(deck.pop())
+            elif (baccarateval(banker_hand)==3):
+                if (cardscore!=8):
+                    banker_hand.append(deck.pop())
+            elif (baccarateval(banker_hand)==4):
+                if (cardscore not in [0,1,8,9]):
+                    banker_hand.append(deck.pop())
+            elif (baccarateval(banker_hand)==5):
+                if (cardscore in [4,5,6,7]):
+                    banker_hand.append(deck.pop())
+            elif (baccarateval(banker_hand)==6):
+                if (cardscore in [6,7]):
+                    banker_hand.append(deck.pop())
+        else:
+            if (baccarateval(banker_hand)<=5):
+                player_hand.append(deck.pop())
+
+        print("\nPlayer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
+        print("Banker's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in banker_hand))
+
+        if (baccarateval(player_hand)>baccarateval(banker_hand)):
+            print("The Player won.")
+            if choice == 1:
+                print("You win!")
+                self.current_user.deposit(amount*2)
+            else:
+                print("Better luck next time.")
+        elif (baccarateval(player_hand)==baccarateval(banker_hand)):
+            print("It's a tie.")
+            self.current_user.deposit(amount)
+        else:
+            print("The Banker won.")
+            if choice == 2:
+                print("You win!")
+                self.current_user.deposit(amount*2)
+            else:
+                print("Better luck next time.")
+            
+
+def cardeval(hand):
+    """Evaluate score of cards in a hand for blackjack"""
+    value = 0
+    aces = 0
+    for card in hand:
+        if card[0] in ['J','Q','K']:
+            value += 10
+        elif card[0] == 'A':
+            value += 11
+            aces += 1
+        else:
+            value += int(card[0])
+    while value > 21:
+        if aces == 0:
+            break
+        value -= 10
+        aces -= 1
+    return value
+
+def baccarateval(hand):
+    """Evaluate score of cards in a hand for baccarat"""
+    value = 0
+    for card in hand:
+        if card[0] in ['J','Q','K']:
+            value += 10
+        elif card[0] == 'A':
+            value += 1
+        else:
+            value += int(card[0])
+    return value % 10
 
 # ============================================================================
 # MAIN APPLICATION
