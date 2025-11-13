@@ -58,13 +58,14 @@ class Account:
     """Represents a single bank account with transaction capabilities."""
     
     def __init__(self, account_number: int, username: str, password: str, 
-                 balance: float = 0.0, transaction_history: list = None):
+             balance: float = 0.0, transaction_history: list = None, savings_goal: float = 0.0):
         self.account_number = account_number
         self.username = username
         self.password = password
         self.balance = balance
         self.transaction_history = transaction_history if transaction_history else []
-    
+        self.savings_goal = savings_goal
+
     def deposit(self, amount: float) -> bool:
         """Add funds to the account."""
         if amount <= 0:
@@ -144,24 +145,24 @@ class Account:
         print("="*60)
     
     def to_dict(self) -> Dict:
-        """Convert account to dictionary for storage."""
         return {
             'account_number': self.account_number,
             'username': self.username,
             'password': self.password,
             'balance': self.balance,
-            'transaction_history': self.transaction_history
+            'transaction_history': self.transaction_history,
+            'savings_goal': self.savings_goal
         }
     
     @staticmethod
     def from_dict(data: Dict) -> 'Account':
-        """Create account from dictionary."""
         return Account(
             account_number=data['account_number'],
             username=data['username'],
             password=data['password'],
             balance=data['balance'],
-            transaction_history=data['transaction_history']
+            transaction_history=data['transaction_history'],
+            savings_goal=data.get('savings_goal', 0.0)
         )
 
 
@@ -263,10 +264,11 @@ class BankingSystem:
             print("3. E-Transfer")
             print("4. View Transaction History")
             print("5. Investing")
-            print("6. Logout")
+            print("6. Savings Goal Menu")
+            print("7. Logout")
             print("="*60)
             
-            choice = input("Enter your choice (1-5): ").strip()
+            choice = input("Enter your choice (1-7): ").strip()
             
             if choice == '1':
                 self._handle_deposit()
@@ -279,6 +281,8 @@ class BankingSystem:
             elif choice == '5':
                 self.investmentmenu()
             elif choice == '6':
+                self._savings_goal_menu()
+            elif choice == '7':
                 self._logout()
                 break
             else:
@@ -334,7 +338,7 @@ class BankingSystem:
                 
         except ValueError:
             print("❌ Invalid input. Please enter valid numbers.")
-    
+
     def _save_current_user(self):
         """Save current user data to database."""
         users = self.database.get_users()
@@ -688,7 +692,6 @@ class BankingSystem:
                     print("You lose!")
                 break
         
-
     def _baccarat(self):
         """Baccarat game"""
 
@@ -782,37 +785,91 @@ class BankingSystem:
             else:
                 print("Better luck next time.")
             
+    def cardeval(hand):
+        """Evaluate score of cards in a hand for blackjack"""
+        value = 0
+        aces = 0
+        for card in hand:
+            if card[0] in ['J','Q','K']:
+                value += 10
+            elif card[0] == 'A':
+                value += 11
+                aces += 1
+            else:
+                value += int(card[0])
+        while value > 21:
+            if aces == 0:
+                break
+            value -= 10
+            aces -= 1
+        return value
 
-def cardeval(hand):
-    """Evaluate score of cards in a hand for blackjack"""
-    value = 0
-    aces = 0
-    for card in hand:
-        if card[0] in ['J','Q','K']:
-            value += 10
-        elif card[0] == 'A':
-            value += 11
-            aces += 1
-        else:
-            value += int(card[0])
-    while value > 21:
-        if aces == 0:
-            break
-        value -= 10
-        aces -= 1
-    return value
+    def baccarateval(hand):
+        """Evaluate score of cards in a hand for baccarat"""
+        value = 0
+        for card in hand:
+            if card[0] in ['J','Q','K']:
+                value += 10
+            elif card[0] == 'A':
+                value += 1
+            else:
+                value += int(card[0])
+        return value % 10
 
-def baccarateval(hand):
-    """Evaluate score of cards in a hand for baccarat"""
-    value = 0
-    for card in hand:
-        if card[0] in ['J','Q','K']:
-            value += 10
-        elif card[0] == 'A':
-            value += 1
-        else:
-            value += int(card[0])
-    return value % 10
+    def _savings_goal_menu(self):
+        """Savings goal menu and tracking."""
+        while True:
+            user = self.current_user
+            print("\n" + "="*60)
+            print("SAVINGS GOAL MENU")
+            print("="*60)
+            print(f"👤 Username: {user.username}")
+            print(f"💰 Current Balance: ${user.balance:.2f}")
+            print(f"🎯 Current Savings Goal: ${user.savings_goal:.2f}")
+
+            if user.savings_goal == 0:
+                print("⚠️ No savings goal set.")
+            elif user.balance >= user.savings_goal:
+                print("✅ Congratulations! You've reached your savings goal!")
+            else:
+                remaining = user.savings_goal - user.balance
+                percent = (user.balance / user.savings_goal) * 100
+                print(f"Progress: {percent:.2f}% complete")
+                print(f"You need ${remaining:.2f} more to reach your goal.")
+
+            print("\nOptions:")
+            print("1. Set New Savings Goal")
+            print("2. Delete Current Goal")
+            print("3. Back")
+            print("="*60)
+
+            choice = input("Enter your choice (1-3): ").strip()
+
+            if choice == '1':
+                self._set_new_savings_goal()
+            elif choice == '2':
+                confirm = input("Are you sure you want to delete your savings goal? (y/n): ").strip().lower()
+                if confirm == 'y':
+                    user.savings_goal = 0.0
+                    self._save_current_user()
+                    print("🗑️ Savings goal deleted.")
+            elif choice == '3':
+                break
+            else:
+                print("❌ Invalid choice. Please try again.")
+
+    def _set_new_savings_goal(self):
+        """Prompt user to set a new savings goal."""
+        try:
+            new_goal = float(input("Enter new savings goal amount: $"))
+            if new_goal <= 0:
+                print("❌ Goal must be greater than zero.")
+                return
+            self.current_user.savings_goal = new_goal
+            self._save_current_user()
+            print(f"✅ New savings goal set: ${new_goal:.2f}")
+        except ValueError:
+            print("❌ Invalid input. Please enter a numeric value.")
 
 # ============================================================================
 # MAIN APPLICATION
