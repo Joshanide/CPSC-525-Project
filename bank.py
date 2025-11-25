@@ -543,49 +543,52 @@ class BankingSystem:
         dealer_hand = [deck.pop(), deck.pop()]
 
         """Player choice/move"""
+        doublable = True
         while True:
             print("Your hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
             print(f"Dealer's hand: ? {dealer_hand[1][0]}{dealer_hand[1][1]}")
-            if (cardeval(player_hand)==21):
+            if (self.cardeval(player_hand)==21):
                 print("Blackjack! 🤑")
                 self.current_user.deposit(amount+amount*1.5)
                 input("\nPress Enter to continue.")
                 return
             print("1. Hit")
-            print("2. Double")
-            print("3. Stand")
+            print("2. Stand")
+            if doublable:
+                print("3. Double")
 
             choice = input("Enter your choice (1-3): ").strip()
             print("="*60)
             
             if choice == '1':
                 player_hand.append(deck.pop())
-                if (cardeval(player_hand) > 21):
+                if (self.cardeval(player_hand) > 21):
                     break
+                doublable = False
             elif choice == '2':
+                break
+            elif choice == '3' and doublable:
                 amount = amount*2
                 player_hand.append(deck.pop())
-                break
-            elif choice == '3':
                 break
             else:
                 print("❌ Invalid choice. Please try again.")
 
         """Scoring"""
         print("Dealer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in dealer_hand))
-        while (cardeval(dealer_hand)<17):
+        while (self.cardeval(dealer_hand)<17):
             dealer_hand.append(deck.pop())
             print("Dealer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in dealer_hand))
         print("Your hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
 
-        if (cardeval(player_hand) > 21):
+        if (self.cardeval(player_hand) > 21):
             print("You bust. 😢")
-        elif (cardeval(dealer_hand) > 21):
+        elif (self.cardeval(dealer_hand) > 21):
             print("The dealer busts! 🤑")
             self.current_user.deposit(amount*2)
-        elif (cardeval(dealer_hand)>cardeval(player_hand)):
+        elif (self.cardeval(dealer_hand)>self.cardeval(player_hand)):
             print("The dealer won. 😢")
-        elif (cardeval(dealer_hand)==cardeval(player_hand)):
+        elif (self.cardeval(dealer_hand)==self.cardeval(player_hand)):
             print("It's a tie! ⚖️")
             self.current_user.deposit(amount)
         else:
@@ -742,39 +745,39 @@ class BankingSystem:
         """Third card drawing"""
         #if (baccarateval(player_hand) >= 8 or baccarateval(banker_hand) >= 8):
         #    break
-        if (baccarateval(player_hand)<=5):
+        if (self.baccarateval(player_hand)<=5):
             thirdcard = deck.pop()
-            cardscore = baccarateval([thirdcard])
+            cardscore = self.baccarateval([thirdcard])
             player_hand.append(thirdcard)
-            if (baccarateval(banker_hand)<=2):
+            if (self.baccarateval(banker_hand)<=2):
                 banker_hand.append(deck.pop())
-            elif (baccarateval(banker_hand)==3):
+            elif (self.baccarateval(banker_hand)==3):
                 if (cardscore!=8):
                     banker_hand.append(deck.pop())
-            elif (baccarateval(banker_hand)==4):
+            elif (self.baccarateval(banker_hand)==4):
                 if (cardscore not in [0,1,8,9]):
                     banker_hand.append(deck.pop())
-            elif (baccarateval(banker_hand)==5):
+            elif (self.baccarateval(banker_hand)==5):
                 if (cardscore in [4,5,6,7]):
                     banker_hand.append(deck.pop())
-            elif (baccarateval(banker_hand)==6):
+            elif (self.baccarateval(banker_hand)==6):
                 if (cardscore in [6,7]):
                     banker_hand.append(deck.pop())
         else:
-            if (baccarateval(banker_hand)<=5):
+            if (self.baccarateval(banker_hand)<=5):
                 player_hand.append(deck.pop())
 
         print("\nPlayer's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in player_hand))
         print("Banker's hand: ", '  '.join(f"{rank}{suit}" for rank, suit in banker_hand))
 
-        if (baccarateval(player_hand)>baccarateval(banker_hand)):
+        if (self.baccarateval(player_hand)>self.baccarateval(banker_hand)):
             print("The Player won.")
             if choice == 1:
                 print("You win!")
                 self.current_user.deposit(amount*2)
             else:
                 print("Better luck next time.")
-        elif (baccarateval(player_hand)==baccarateval(banker_hand)):
+        elif (self.baccarateval(player_hand)==self.baccarateval(banker_hand)):
             print("It's a tie.")
             self.current_user.deposit(amount)
         else:
@@ -785,7 +788,7 @@ class BankingSystem:
             else:
                 print("Better luck next time.")
             
-    def cardeval(hand):
+    def cardeval(self,hand):
         """Evaluate score of cards in a hand for blackjack"""
         value = 0
         aces = 0
@@ -804,7 +807,7 @@ class BankingSystem:
             aces -= 1
         return value
 
-    def baccarateval(hand):
+    def baccarateval(self,hand):
         """Evaluate score of cards in a hand for baccarat"""
         value = 0
         for card in hand:
