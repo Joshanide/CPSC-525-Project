@@ -772,7 +772,7 @@ class BankingSystem:
 
         if (self.baccarateval(player_hand)>self.baccarateval(banker_hand)):
             print("The Player won.")
-            if choice == 1:
+            if choice == "1":
                 print("You win!")
                 self.current_user.deposit(amount*2)
             else:
@@ -782,7 +782,7 @@ class BankingSystem:
             self.current_user.deposit(amount)
         else:
             print("The Banker won.")
-            if choice == 2:
+            if choice == "2":
                 print("You win!")
                 self.current_user.deposit(amount*2)
             else:
