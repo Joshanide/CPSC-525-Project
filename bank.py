@@ -7,6 +7,7 @@ import os
 import random
 from datetime import datetime
 from typing import Dict, Optional
+import requests
 
 # ============================================================================
 # DATA STORAGE CLASS
@@ -424,7 +425,8 @@ class BankingSystem:
             print("2. Blackjack")
             print("3. Roulette")
             print("4. Baccarat")
-            print("5. Back")
+            print("5. Who Wants To Be A Millionaire")
+            print("6. Back")
             print("="*60)
 
             choice = input("Enter your choice (1-5): ").strip()
@@ -438,6 +440,8 @@ class BankingSystem:
             elif choice == '4':
                 self._baccarat()
             elif choice == '5':
+                self.trivia()
+            elif choice == '6':
                 break
             else:
                 print("❌ Invalid choice. Please try again.")
@@ -787,6 +791,74 @@ class BankingSystem:
                 self.current_user.deposit(amount*2)
             else:
                 print("Better luck next time.")
+
+    def trivia(self):
+        """Who Wants To Be A Millionaire game"""
+
+        #trivia api
+        url = "https://opentdb.com/api.php?amount=1"
+
+        #dictionary for changing the options in multiple choice questions to letters
+        mcletters = {0:'a', 1:'b',2:'c',3:'d'}
+
+        print("Welcome to Who Wants To Be A Millionaire!")
+        print("If you can make it through all 15 questions, you will make a million dollars.")
+
+        #loop of 15 questions that get harder every 5 questions
+        for i in range(1, 16):
+            print("\n" + "="*60)
+            print("Question #",i)
+            if i <= 5:
+                difficulty = "easy"
+            elif i <= 10:
+                difficulty = "medium"
+            else:
+                difficulty = "hard"
+
+            #send request
+            response = requests.get(url+"&difficulty="+difficulty+"&type=multiple")
+
+            #if request is succesful
+            if response.status_code == 200:
+                #creates a json like list for the question within a json (stupid)
+                stupid = response.json()
+                #results are in a list, even for only one question
+                data = stupid["results"][0]
+                #print question
+                print(data["question"].replace("&quot;","\""))
+
+                #generate a random number for where the correct answer will be placed
+                num = random.randint(0, 3)
+                #print all incorrect answers that come before the correct answer
+                for x in range(num):
+                    print(mcletters[x] + ". " + data["incorrect_answers"][x])
+                #print correct answer
+                print(mcletters[num] + ". " + data["correct_answer"])
+                #print all incorrect answers that come after the correct answer
+                for y in range(3-num):
+                    print(mcletters[1+y+num] + ". " + data["incorrect_answers"][y+num])
+                
+                #User answer
+                useranswer = input("Enter your answer: ")
+                #Error checking
+                while useranswer not in ['a','b','c','d']:
+                    print("Enter the letter a, b, c, or d based on your answer.")
+                    useranswer = input("Enter your answer: ")
+                
+                #checking if user answer is correct
+                if useranswer == mcletters[num]:
+                    print("Correct!")
+                else:
+                    print("Wrong! Thanks for playing.")
+                    print("The correct answer was "+ mcletters[num]+". "+data["correct_answer"])
+                    return
+                
+            else:
+                print("Apologies, there was an error loading this question.")
+                return
+
+        #Deposit a million dollars if they won.    
+        self.current_user.deposit(1000000)
             
     def cardeval(self,hand):
         """Evaluate score of cards in a hand for blackjack"""
